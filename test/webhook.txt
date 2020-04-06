@@ -1,0 +1,7 @@
+
+curl -kvX POST \
+  -A "GitHub-Hookshot/github" \
+  -H "Content-Type:application/json" \
+  -H "X-Github-Event:push" \
+  -d @tmp/github-commit-payload.json \
+  http://webhook-post-app-cicd.apps.openshift.codeready.cloud
