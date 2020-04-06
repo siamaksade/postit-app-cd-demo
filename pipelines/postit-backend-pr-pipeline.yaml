@@ -1,0 +1,79 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: posit-backend-deploy-pr
+spec:
+  params:
+    - name: COMMIT_ID
+      type: string
+      default: master
+  workspaces:
+  - name: local-maven-repo
+  resources:
+  - name: app-git
+    type: git
+  - name: app-image
+    type: image
+  tasks:
+  - name: unit-tests
+    taskRef:
+      name: maven
+    workspaces:
+    - name: maven-repo
+      workspace: local-maven-repo
+    resources:
+      inputs:
+      - name: source
+        resource: app-git
+    params:
+    - name: GOALS
+      value: ["package", "-f", "quarkus-backend"]
+    - name: MAVEN_SETTINGS_CONFIGMAP
+      value: custom-maven-settings
+  - name: build-image
+    taskRef:
+      name: s2i-java-11
+      kind: ClusterTask
+    runAfter:
+      - unit-tests
+    params:
+      - name: TLSVERIFY
+        value: "false"
+      - name: MAVEN_MIRROR_URL
+        value: http://nexus:8081/repository/maven-public/
+    resources:
+      inputs:
+      - name: source
+        resource: app-git
+      outputs:
+      - name: image
+        resource: app-image
+  - name: deploy-pr
+    taskRef:
+      name: openshift-client
+    runAfter:
+      - build-image
+    params:
+    - name: COMMANDS
+      value: |
+          oc rollout latest dc/quarkus-backend -n post-app-sun
+          oc rollout latest dc/quarkus-backend -n post-app-sun
+  - name: int-test
+    taskRef:
+      name: openshift-client
+    runAfter:
+      - deploy-pr
+    params:
+    - name: COMMANDS
+      value: |
+          sleep $(($RANDOM % 120 + 10))
+  - name: clean-up-pr
+    taskRef:
+      name: openshift-client
+    runAfter:
+      - int-test
+    params:
+    - name: COMMANDS
+      value: |
+          oc rollout latest dc/quarkus-backend -n post-app-sun
+          oc rollout latest dc/quarkus-backend -n post-app-sun

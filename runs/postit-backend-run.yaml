@@ -1,0 +1,18 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  generateName: posit-backend-deploy-run-
+spec:
+  pipelineRef:
+    name: posit-backend-deploy
+  resources:
+  - name: app-git
+    resourceRef:
+      name: postit-git
+  - name: app-image
+    resourceRef:
+      name: postit-backend-image
+  workspaces:
+  - name: local-maven-repo
+    persistentVolumeClaim:
+      claimName: maven-repo-pvc

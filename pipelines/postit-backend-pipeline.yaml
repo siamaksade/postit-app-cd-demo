@@ -1,0 +1,115 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: posit-backend-deploy
+spec:
+  workspaces:
+  - name: local-maven-repo
+  resources:
+  - name: app-git
+    type: git
+  - name: app-image
+    type: image
+  tasks:
+  - name: unit-tests
+    taskRef:
+      name: maven
+    workspaces:
+    - name: maven-repo
+      workspace: local-maven-repo
+    resources:
+      inputs:
+      - name: source
+        resource: app-git
+    params:
+    - name: GOALS
+      value: ["package", "-f", "quarkus-backend"]
+    - name: MAVEN_SETTINGS_CONFIGMAP
+      value: custom-maven-settings
+  - name: release-app
+    taskRef:
+      name: maven
+    runAfter:
+      - unit-tests
+    workspaces:
+    - name: maven-repo
+      workspace: local-maven-repo
+    resources:
+      inputs:
+      - name: source
+        resource: app-git
+    params:
+    - name: GOALS
+      value:
+      - deploy
+      - -f 
+      - quarkus-backend
+      - -DskipTests=true
+      - -DaltDeploymentRepository=nexus::default::http://nexus:8081/repository/maven-snapshots/
+      - -DaltReleaseDeploymentRepository=nexus::default::http://nexus:8081/repository/maven-releases/
+      - -DaltSnapshotDeploymentRepository=nexus::default::http://nexus:8081/repository/maven-snapshots/
+    - name: MAVEN_SETTINGS_CONFIGMAP
+      value: custom-maven-settings
+  - name: code-analysis
+    taskRef:
+      name: maven
+    runAfter:
+      - unit-tests
+    workspaces:
+    - name: maven-repo
+      workspace: local-maven-repo
+    resources:
+      inputs:
+      - name: source
+        resource: app-git
+    params:
+    - name: GOALS
+      value:
+      - install
+      - sonar:sonar
+      - -f 
+      - quarkus-backend
+      - -Dsonar.host.url=http://sonarqube:9000
+      - -Dsonar.userHome=/tmp/sonar
+    - name: MAVEN_SETTINGS_CONFIGMAP
+      value: custom-maven-settings
+  - name: build-image
+    taskRef:
+      name: s2i-java-11
+      kind: ClusterTask
+    runAfter:
+      - release-app
+      - code-analysis
+    params:
+      - name: TLSVERIFY
+        value: "false"
+      - name: MAVEN_MIRROR_URL
+        value: http://nexus:8081/repository/maven-public/
+      - name: PATH_CONTEXT
+        value: quarkus-backend
+    resources:
+      inputs:
+      - name: source
+        resource: app-git
+      outputs:
+      - name: image
+        resource: app-image
+  - name: deploy
+    taskRef:
+      name: openshift-client
+    runAfter:
+      - build-image
+    params:
+    - name: COMMANDS
+      value: |
+          oc rollout latest dc/quarkus-backend -n post-app-sun
+          oc rollout latest dc/quarkus-backend -n post-app-sun
+  - name: int-test
+    taskRef:
+      name: openshift-client
+    runAfter:
+      - deploy
+    params:
+    - name: COMMANDS
+      value: |
+          sleep $(($RANDOM % 20 + 10))

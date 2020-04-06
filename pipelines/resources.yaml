@@ -1,0 +1,22 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: postit-git
+spec:
+  type: git
+  params:
+  - name: url
+    value: https://github.com/sunix/quarkus-reactjs-postit-app
+  - name: depth
+    value: "0"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: postit-backend-image
+spec:
+  type: image
+  params:
+  - name: url
+    value: image-registry.openshift-image-registry.svc:5000/post-app-sun/quarkus-backend
