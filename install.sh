@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 set -e -u -o pipefail
 declare -r SCRIPT_DIR=$(cd -P $(dirname $0) && pwd)
 declare cicd_prj=post-app-cicd 
