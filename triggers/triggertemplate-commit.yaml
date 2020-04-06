@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: posit-backend-deploy-template
+  name: postit-backend-deploy
 spec:
   params:
   - name: gitrevision
@@ -19,12 +19,12 @@ spec:
   - apiVersion: tekton.dev/v1alpha1
     kind: PipelineRun
     metadata:
-      generateName: posit-backend-deploy-run-
+      generateName: postit-backend-deploy-run-
       labels:
-        tekton.dev/pipeline: posit-backend-deploy
+        tekton.dev/pipeline: postit-backend-deploy
     spec:
       pipelineRef:
-        name: posit-backend-deploy
+        name: postit-backend-deploy
       resources:
       - name: app-git
         resourceRef:

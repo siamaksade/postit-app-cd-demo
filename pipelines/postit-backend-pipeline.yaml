@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: Pipeline
 metadata:
-  name: posit-backend-deploy
+  name: postit-backend-deploy
 spec:
   workspaces:
   - name: local-maven-repo

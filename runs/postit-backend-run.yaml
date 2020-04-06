@@ -1,10 +1,10 @@
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineRun
 metadata:
-  generateName: posit-backend-deploy-run-
+  generateName: postit-backend-deploy-run-
 spec:
   pipelineRef:
-    name: posit-backend-deploy
+    name: postit-backend-deploy
   resources:
   - name: app-git
     resourceRef:

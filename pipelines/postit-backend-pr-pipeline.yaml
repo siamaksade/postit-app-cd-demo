@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: Pipeline
 metadata:
-  name: posit-backend-deploy-pr
+  name: postit-backend-deploy-pr
 spec:
   params:
     - name: COMMIT_ID
@@ -56,8 +56,10 @@ spec:
     params:
     - name: COMMANDS
       value: |
-          oc rollout latest dc/quarkus-backend -n post-app-sun
-          oc rollout latest dc/quarkus-backend -n post-app-sun
+          DEPLOY_NAME=quarkus-backend-${$(params.COMMIT_ID):0:7}
+          oc new-app -i quarkus-backend:$C_ID --name $DEPLOY_NAME -n post-app-sun
+          oc expose svc/$DEPLOY_NAME -n post-app-sun
+          oc rollout latest dc/$DEPLOY_NAME -n post-app-sun
   - name: int-test
     taskRef:
       name: openshift-client
@@ -74,6 +76,4 @@ spec:
       - int-test
     params:
     - name: COMMANDS
-      value: |
-          oc rollout latest dc/quarkus-backend -n post-app-sun
-          oc rollout latest dc/quarkus-backend -n post-app-sun
+      value: oc delete all -l app=quarkus-backend-9190231
